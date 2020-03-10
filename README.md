@@ -1,6 +1,6 @@
 # BUSCOfilter
 
-A tool to filter [**BUSCO**] (https://busco.ezlab.org/) output of into single-copy folders for phylogenetics
+A tool to filter [**BUSCO**](https://busco.ezlab.org/) output of into single-copy folders for phylogenetics
 
 ## Requirements
 
