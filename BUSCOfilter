@@ -119,10 +119,12 @@ do
     cat ${DIRECTORY}/*/for_phylo/${busco}* > ${DIRECTORY}/alignments/${busco}.fa
     
     n=$((n+1))
-    echo "Writing fasta file for each BUSCO in ${DIRECTORY}/alignments ${n} / `cat $LIST | wc -l`"
+    echo "Writing fasta file for each BUSCO in ${DIRECTORY}/alignments ${n} / `cat ${DIRECTORY}/busco_list | wc -l`"
 done
 
 rm -r ${DIRECTORY}/*/for_phylo
+
+echo "Fasta files ready to align in ${DIRECTORY}/alignments"
 
 echo "`date -u`"
 echo "-------------------------------------------------"
