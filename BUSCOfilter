@@ -88,7 +88,7 @@ echo "List of `cat ${DIRECTORY}/busco_list | wc -l` common single copy BUSCOs fr
 
 #Copy and rename only common BUSCOs
 
-echo "Sorting common BUSCOs into separate folders, may take a while... 0 / `cat $LIST | wc -l`"
+echo "Extracting common BUSCOs, may take a while... 0 / `cat $LIST | wc -l`"
 
 n=0
 
@@ -102,19 +102,29 @@ do
     done
     
     n=$((n+1))
-    echo "Sorting common BUSCOs into separate folders, may take a while... ${n} / `cat $LIST | wc -l`"
+    echo "Extracting common BUSCOs, may take a while... ${n} / `cat $LIST | wc -l`"
 done
 
 #Move into folders for alignments
+
+echo "Writing fasta file for each BUSCO in ${DIRECTORY}/alignments 0 / `cat $LIST | wc -l`"
+
+n=0
 
 mkdir ${DIRECTORY}/alignments
 
 for busco in `cat ${DIRECTORY}/busco_list | cut -f 1 -d '.'`
 do
     mkdir ${DIRECTORY}/alignments/${busco}
-    mv ${DIRECTORY}/*/for_phylo/${busco}* ${DIRECTORY}/alignments/${busco}/
+    cat ${DIRECTORY}/*/for_phylo/${busco}* > ${DIRECTORY}/alignments/${busco}.fa
+    
+    n=$((n+1))
+    echo "Writing fasta file for each BUSCO in ${DIRECTORY}/alignments ${n} / `cat $LIST | wc -l`"
 done
 
 rm -r ${DIRECTORY}/*/for_phylo
 
-echo "Folders for each BUSCO written in ${DIRECTORY}/alignments"
+echo "`date -u`"
+echo "-------------------------------------------------"
+echo "Finished"
+echo "-------------------------------------------------"
