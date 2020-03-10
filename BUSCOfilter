@@ -107,7 +107,7 @@ done
 
 #Move into folders for alignments
 
-echo "Writing fasta file for each BUSCO 0 / `cat $LIST | wc -l`"
+echo "Writing fasta file for each BUSCO 0 / `cat ${DIRECTORY}/busco_list | wc -l`"
 
 n=0
 
@@ -115,7 +115,6 @@ mkdir ${DIRECTORY}/alignments
 
 for busco in `cat ${DIRECTORY}/busco_list | cut -f 1 -d '.'`
 do
-    mkdir ${DIRECTORY}/alignments/${busco}
     cat ${DIRECTORY}/*/for_phylo/${busco}* > ${DIRECTORY}/alignments/${busco}.fa
     
     n=$((n+1))
