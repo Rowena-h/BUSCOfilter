@@ -1,0 +1,120 @@
+#!/bin/bash
+#Script to sort BUSCO output into gene folders for phylogenomics
+
+display_usage() {
+	echo ""
+	echo "USAGE: $0 [OPTIONS]"
+    echo ""
+	echo "OPTIONS"
+    echo "  -l, --list"
+    echo "      list of assembly names for which busco has been run"
+    echo ""
+    echo "  -d, --directory"
+    echo "      directory containing busco output folders"
+    echo ""
+    echo "EXAMPLE"
+	echo "  $0 -l fus_list -d /data/SBCS-BuggsLab/RowenaHill/orthologue_clustering/Fusarium_genomes"
+    echo ""
+    exit
+}
+
+if [ -z "$1" ]
+then
+    display_usage
+    exit
+fi
+
+while [ "$#" -gt 0 ]
+do
+    ARGUMENTS="$1"
+    case $ARGUMENTS in
+        -h|--help)
+        display_usage
+        ;;
+        -l|--list)
+        LIST="$2"
+        shift
+        ;;
+        -d|--directory)
+        DIRECTORY="$2"
+        shift
+    esac
+    shift
+done
+
+if [ -z "$DIRECTORY" ] || [ -z "$LIST" ]
+then
+    echo "Missing required options"
+    display_usage
+    echo "Exiting..."
+    exit
+fi
+
+if [ `cat $LIST | wc -l` != `ls -d ${DIRECTORY}/*/single_copy_busco_sequences | wc -l` ]
+then
+    echo "-------------------------------------------------------------------------------------------------"
+    echo "Number of BUSCO output folders in the provided directory and list of assembly names do not match!"
+    echo "-------------------------------------------------------------------------------------------------"
+    display_usage
+    echo "Exiting..."
+    exit
+fi
+
+echo "`date -u`"
+echo "-------------------------------------------------"
+echo "Starting $0"
+echo "-------------------------------------------------"
+
+#List BUSCO stats
+
+for assembly in `cat $LIST`
+do
+    grep "C:" ${DIRECTORY}/run_${assembly}/short_summary_* >> tmp
+done
+
+paste $LIST tmp > ${DIRECTORY}/busco_stats.txt
+
+rm tmp
+
+echo "Summary of BUSCO statistics written to busco_stats.txt"
+
+#Filter for common BUSCOs
+
+dirs=(`ls -d ${DIRECTORY}/*/single_copy_busco_sequences`)
+
+find "${dirs[@]}" -maxdepth 1 -type f -name "*.fna" -printf '%f\n' | sort | uniq -c | sed -n "s/^ *${#dirs[@]} //p" > ${DIRECTORY}/busco_list
+
+echo "List of `cat ${DIRECTORY}/busco_list | wc -l` common single copy BUSCOs from all assemblies written to ${DIRECTORY}/busco_list"
+
+#Copy and rename only common BUSCOs
+
+echo "Sorting common BUSCOs into separate folders, may take a while... 0 / `cat $LIST | wc -l`"
+
+n=0
+
+for assembly in `cat $LIST`
+do
+    mkdir ${DIRECTORY}/run_${assembly}/for_phylo
+
+    for busco in `cat ${DIRECTORY}/busco_list | cut -f 1 -d '.'`
+    do
+        cp ${DIRECTORY}/run_${assembly}/single_copy_busco_sequences/${busco}.fna ${DIRECTORY}/run_${assembly}/for_phylo/${busco}_${assembly}
+    done
+    
+    n=$((n+1))
+    echo "Sorting common BUSCOs into separate folders, may take a while... ${n} / `cat $LIST | wc -l`"
+done
+
+#Move into folders for alignments
+
+mkdir ${DIRECTORY}/alignments
+
+for busco in `cat ${DIRECTORY}/busco_list | cut -f 1 -d '.'`
+do
+    mkdir ${DIRECTORY}/alignments/${busco}
+    mv ${DIRECTORY}/*/for_phylo/${busco}* ${DIRECTORY}/alignments/${busco}/
+done
+
+rm -r ${DIRECTORY}/*/for_phylo
+
+echo "Folders for each BUSCO written in ${DIRECTORY}/alignments"
