@@ -99,6 +99,9 @@ do
     for busco in `cat ${DIRECTORY}/busco_list | cut -f 1 -d '.'`
     do
         cp ${DIRECTORY}/run_${assembly}/single_copy_busco_sequences/${busco}.fna ${DIRECTORY}/run_${assembly}/for_phylo/${busco}_${assembly}
+        
+        #Replace fasta header with assembly name
+        sed -i "1s/.*/>${assembly}/" ${DIRECTORY}/run_${assembly}/for_phylo/${busco}_${assembly}
     done
     
     n=$((n+1))
