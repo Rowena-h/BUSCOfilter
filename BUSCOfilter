@@ -107,7 +107,7 @@ done
 
 #Move into folders for alignments
 
-echo "Writing fasta file for each BUSCO in ${DIRECTORY}/alignments 0 / `cat $LIST | wc -l`"
+echo "Writing fasta file for each BUSCO 0 / `cat $LIST | wc -l`"
 
 n=0
 
@@ -119,14 +119,13 @@ do
     cat ${DIRECTORY}/*/for_phylo/${busco}* > ${DIRECTORY}/alignments/${busco}.fa
     
     n=$((n+1))
-    echo "Writing fasta file for each BUSCO in ${DIRECTORY}/alignments ${n} / `cat ${DIRECTORY}/busco_list | wc -l`"
+    echo "Writing fasta file for each BUSCO ${n} / `cat ${DIRECTORY}/busco_list | wc -l`"
 done
 
 rm -r ${DIRECTORY}/*/for_phylo
 
 echo "Fasta files ready to align in ${DIRECTORY}/alignments"
 
-echo "`date -u`"
 echo "-------------------------------------------------"
-echo "Finished"
+echo "Finished `date -u`"
 echo "-------------------------------------------------"
