@@ -76,7 +76,7 @@ paste $LIST tmp > ${DIRECTORY}/busco_stats.txt
 
 rm tmp
 
-echo "Summary of BUSCO statistics written to busco_stats.txt"
+echo "Summary of BUSCO statistics written to ${DIRECTORY}/busco_stats.txt"
 
 #Filter for common BUSCOs
 
@@ -87,8 +87,6 @@ find "${dirs[@]}" -maxdepth 1 -type f -name "*.fna" -printf '%f\n' | sort | uniq
 echo "List of `cat ${DIRECTORY}/busco_list | wc -l` common single copy BUSCOs from all assemblies written to ${DIRECTORY}/busco_list"
 
 #Copy and rename only common BUSCOs
-
-echo "Extracting common BUSCOs, may take a while... 0 / `cat $LIST | wc -l`"
 
 n=0
 
@@ -105,12 +103,10 @@ do
     done
     
     n=$((n+1))
-    echo "Extracting common BUSCOs, may take a while... ${n} / `cat $LIST | wc -l`"
+    echo "Extracting common BUSCOs, taxon ${n} / `cat $LIST | wc -l`"
 done
 
 #Move into folders for alignments
-
-echo "Writing fasta file for each BUSCO 0 / `cat ${DIRECTORY}/busco_list | wc -l`"
 
 n=0
 
@@ -121,12 +117,33 @@ do
     cat ${DIRECTORY}/*/for_phylo/${busco}* > ${DIRECTORY}/alignments/${busco}.fa
     
     n=$((n+1))
-    echo "Writing fasta file for each BUSCO ${n} / `cat ${DIRECTORY}/busco_list | wc -l`"
+    echo "Writing fasta file for BUSCO ${n} / `cat ${DIRECTORY}/busco_list | wc -l`"
 done
 
-rm -r ${DIRECTORY}/*/for_phylo
+#Check number of sequences in fasta files
+
+for busco in `cat ${DIRECTORY}/busco_list | cut -f 1 -d '.'`
+do
+    fgrep -o '>' ${DIRECTORY}/alignments/${busco}.fa | wc -l > tmp
+    echo "meow1"
+    if [ `cat tmp` != `cat ${LIST} | wc -l` ]
+    then
+        echo "meow2"
+        echo ${busco} >> ${DIRECTORY}/alignments/error_list
+    fi
+    
+done
 
 echo "Fasta files ready to align in ${DIRECTORY}/alignments"
+
+if [ `cat ${DIRECTORY}/alignments/error_list | wc -l` -gt 0 ]
+then
+    echo "meow3"
+    echo "`cat ${DIRECTORY}/alignments/error_list | wc -l` fasta files have the wrong number of taxa. BUSCO IDs have been printed to ${DIRECTORY}/alignments/error_list, please check these files manually before trying to align"
+fi
+
+rm tmp
+rm -r ${DIRECTORY}/*/for_phylo
 
 echo "-------------------------------------------------"
 echo "Finished `date -u`"

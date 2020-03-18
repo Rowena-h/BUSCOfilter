@@ -33,7 +33,5 @@ ls -d run_* | cut -f 2- -d '_' > assembly_list
 ### Example
 
 ```
-./BUSCOfilter -l fus_list -d fus_busco
+./BUSCOfilter -l assembly_list -d busco_folders
 ```
-
-To see an example run, refer to the example directory.
