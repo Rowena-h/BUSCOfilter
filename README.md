@@ -1,4 +1,4 @@
-# BUSCOfilter
+    # BUSCOfilter
 
 A tool to filter [**BUSCO**](https://busco.ezlab.org/) output into folders of common single copy sequences for phylogenetics.
 
@@ -21,17 +21,11 @@ chmod +x BUSCOfilter
 Option | Description
 ------ | -----------
 -h, --help | Display these options
--l, --list | A list of assembly names for which busco has been run
--d, --directory | Directory containing busco output folders
+-d, --directory | Directory containing busco output folders which must have the typical 'run_' prefix
 
-If the list of assemblies and number of BUSCO output folders in the provided directory don't match, BUSCOfilter will return an error. To ensure the list matches the BUSCO folders in the directory, and assuming the BUSCO output folders have the typical 'run_' prefix, you can make the list with the following command:
-
-```
-ls -d run_* | cut -f 2- -d '_' > assembly_list
-```
 
 ### Example
 
 ```
-./BUSCOfilter -l assembly_list -d busco_folders
+./BUSCOfilter -d /data/busco_folders
 ```

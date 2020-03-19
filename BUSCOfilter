@@ -6,14 +6,11 @@ display_usage() {
 	echo "USAGE: $0 [OPTIONS]"
     echo ""
 	echo "OPTIONS"
-    echo "  -l, --list"
-    echo "      list of assembly names for which busco has been run"
-    echo ""
     echo "  -d, --directory"
-    echo "      directory containing busco output folders"
+    echo "      Directory containing busco output folders which must have the typical 'run_' prefix"
     echo ""
     echo "EXAMPLE"
-	echo "  $0 -l fus_list -d /data/SBCS-BuggsLab/RowenaHill/orthologue_clustering/Fusarium_genomes"
+	echo "  $0 -d /data/busco_folders"
     echo ""
     exit
 }
@@ -31,10 +28,6 @@ do
         -h|--help)
         display_usage
         ;;
-        -l|--list)
-        LIST="$2"
-        shift
-        ;;
         -d|--directory)
         DIRECTORY="$2"
         shift
@@ -42,20 +35,12 @@ do
     shift
 done
 
-if [ -z "$DIRECTORY" ] || [ -z "$LIST" ]
+if [ -z "$DIRECTORY" ]
 then
+    echo ""
     echo "Missing required options"
     display_usage
-    echo "Exiting..."
-    exit
-fi
-
-if [ `cat $LIST | wc -l` != `ls -d ${DIRECTORY}/*/single_copy_busco_sequences | wc -l` ]
-then
-    echo "-------------------------------------------------------------------------------------------------"
-    echo "Number of BUSCO output folders in the provided directory and list of assembly names do not match!"
-    echo "-------------------------------------------------------------------------------------------------"
-    display_usage
+    echo ""
     echo "Exiting..."
     exit
 fi
@@ -65,14 +50,20 @@ echo "-------------------------------------------------"
 echo "Starting $0"
 echo "-------------------------------------------------"
 
-#List BUSCO stats
+ls -d ${DIRECTORY}/run_* | sed s/^.*\\/\// | cut -f 2- -d '_' > ${DIRECTORY}/assembly_list
+
+echo "List of all assemblies in the provided directory written to ${DIRECTORY}/assembly_list"
+
+LIST=${DIRECTORY}/assembly_list
+
+#Make text file with BUSCO stats
 
 for assembly in `cat $LIST`
 do
     grep "C:" ${DIRECTORY}/run_${assembly}/short_summary_* >> tmp
 done
 
-paste $LIST tmp > ${DIRECTORY}/busco_stats.txt
+paste $LIST tmp > ${DIRECTORY}/busco_stats
 
 rm tmp
 
@@ -103,7 +94,7 @@ do
     done
     
     n=$((n+1))
-    echo "Extracting common BUSCOs, taxon ${n} / `cat $LIST | wc -l`"
+    echo "Extracting common BUSCOs, assembly ${n} / `cat $LIST | wc -l`"
 done
 
 #Move into folders for alignments
