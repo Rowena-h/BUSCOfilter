@@ -1,4 +1,4 @@
-    # BUSCOfilter
+# BUSCOfilter
 
 A tool to filter [**BUSCO**](https://busco.ezlab.org/) output into folders of common single copy sequences for phylogenetics.
 
