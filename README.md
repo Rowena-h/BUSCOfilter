@@ -2,7 +2,7 @@
 
 A tool to filter [**BUSCO**](https://busco.ezlab.org/) output into folders of common single copy sequences to be aligned for phylogenomics.
 
-<img src="schematic.PNG" width="800")
+<img src="schematic.PNG" width="800">
 
 ## Requirements
 
