@@ -125,10 +125,9 @@ done
 for busco in `cat ${DIRECTORY}/busco_list | cut -f 1 -d '.'`
 do
     fgrep -o '>' ${DIRECTORY}/alignments/${busco}.fa | wc -l > tmp
-    echo "meow1"
+
     if [ `cat tmp` != `cat ${LIST} | wc -l` ]
     then
-        echo "meow2"
         echo ${busco} >> ${DIRECTORY}/alignments/error_list
     fi
     
@@ -136,9 +135,8 @@ done
 
 echo "Fasta files ready to align in ${DIRECTORY}/alignments"
 
-if [ `cat ${DIRECTORY}/alignments/error_list | wc -l` -gt 0 ]
+if [ -f ${DIRECTORY}/alignments/error_list ]
 then
-    echo "meow3"
     echo "`cat ${DIRECTORY}/alignments/error_list | wc -l` fasta files have the wrong number of taxa. BUSCO IDs have been printed to ${DIRECTORY}/alignments/error_list, please check these files manually before trying to align"
 fi
 
