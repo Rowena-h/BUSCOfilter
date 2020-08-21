@@ -50,32 +50,34 @@ echo "-------------------------------------------------"
 echo "Starting $0"
 echo "-------------------------------------------------"
 
-ls -d ${DIRECTORY}/run_* | sed s/^.*\\/\// | cut -f 2- -d '_' > ${DIRECTORY}/assembly_list
+DATE=$(date +"%d-%m-%Y")
 
-echo "List of all assemblies in the provided directory written to ${DIRECTORY}/assembly_list"
+ls -d ${DIRECTORY}/run_* | sed s/^.*\\/\// | cut -f 2- -d '_' > ${DIRECTORY}/assembly_list_${DATE}
 
-LIST=${DIRECTORY}/assembly_list
+echo "List of all assemblies in the provided directory written to  ${DIRECTORY}/assembly_list_${DATE}"
+
+LIST=${DIRECTORY}/assembly_list_${DATE}
 
 #Make text file with BUSCO stats
 
 for assembly in `cat $LIST`
 do
-    grep "C:" ${DIRECTORY}/run_${assembly}/short_summary_* >> tmp
+    grep "C:" ${DIRECTORY}/run_${assembly}/short_summary_* >> summaries
 done
 
-paste $LIST tmp > ${DIRECTORY}/busco_stats
+paste $LIST summaries > ${DIRECTORY}/busco_stats_${DATE}.txt
 
-rm tmp
+rm summaries
 
-echo "Summary of BUSCO statistics written to ${DIRECTORY}/busco_stats.txt"
+echo "Summary of BUSCO statistics written to ${DIRECTORY}/busco_stats_${DATE}.txt"
 
 #Filter for common BUSCOs
 
 dirs=(`ls -d ${DIRECTORY}/*/single_copy_busco_sequences`)
 
-find "${dirs[@]}" -maxdepth 1 -type f -name "*.fna" -printf '%f\n' | sort | uniq -c | sed -n "s/^ *${#dirs[@]} //p" > ${DIRECTORY}/busco_list
+find "${dirs[@]}" -maxdepth 1 -type f -name "*.fna" -printf '%f\n' | sort | uniq -c | sed -n "s/^ *${#dirs[@]} //p" > ${DIRECTORY}/busco_list_${DATE}
 
-echo "List of `cat ${DIRECTORY}/busco_list | wc -l` common single copy BUSCOs from all assemblies written to ${DIRECTORY}/busco_list"
+echo "List of `cat ${DIRECTORY}/busco_list_${DATE} | wc -l` common single copy BUSCOs from all assemblies written to ${DIRECTORY}/busco_list_${DATE}"
 
 #Copy and rename only common BUSCOs
 
@@ -85,7 +87,7 @@ for assembly in `cat $LIST`
 do
     mkdir ${DIRECTORY}/run_${assembly}/for_phylo
 
-    for busco in `cat ${DIRECTORY}/busco_list | cut -f 1 -d '.'`
+    for busco in `cat ${DIRECTORY}/busco_list_${DATE} | cut -f 1 -d '.'`
     do
         cp ${DIRECTORY}/run_${assembly}/single_copy_busco_sequences/${busco}.fna ${DIRECTORY}/run_${assembly}/for_phylo/${busco}_${assembly}
         
@@ -101,34 +103,34 @@ done
 
 n=0
 
-mkdir ${DIRECTORY}/fasta
+mkdir ${DIRECTORY}/fasta_${DATE}
 
-for busco in `cat ${DIRECTORY}/busco_list | cut -f 1 -d '.'`
+for busco in `cat ${DIRECTORY}/busco_list_${DATE} | cut -f 1 -d '.'`
 do
-    cat ${DIRECTORY}/*/for_phylo/${busco}* > ${DIRECTORY}/fasta/${busco}.fa
+    cat ${DIRECTORY}/*/for_phylo/${busco}* > ${DIRECTORY}/fasta_${DATE}/${busco}.fa
     
     n=$((n+1))
-    echo "Writing fasta file for BUSCO ${n} / `cat ${DIRECTORY}/busco_list | wc -l`"
+    echo "Writing fasta file for BUSCO ${n} / `cat ${DIRECTORY}/busco_list_${DATE} | wc -l`"
 done
 
 #Check number of sequences in fasta files
 
-for busco in `cat ${DIRECTORY}/busco_list | cut -f 1 -d '.'`
+for busco in `cat ${DIRECTORY}/busco_list_${DATE} | cut -f 1 -d '.'`
 do
-    fgrep -o '>' ${DIRECTORY}/fasta/${busco}.fa | wc -l > tmp
+    fgrep -o '>' ${DIRECTORY}/fasta_${DATE}/${busco}.fa | wc -l > tmp
 
     if [ `cat tmp` != `cat ${LIST} | wc -l` ]
     then
-        echo ${busco} >> ${DIRECTORY}/fasta/error_list
+        echo ${busco} >> ${DIRECTORY}/fasta_${DATE}/error_list
     fi
     
 done
 
-echo "Fasta files ready to align in ${DIRECTORY}/fasta"
+echo "Fasta files ready to align in ${DIRECTORY}/fasta_${DATE}"
 
-if [ -f ${DIRECTORY}/fasta/error_list ]
+if [ -f ${DIRECTORY}/fasta_${DATE}/error_list ]
 then
-    echo "`cat ${DIRECTORY}/fasta/error_list | wc -l` fasta files have the wrong number of taxa. BUSCO IDs have been printed to ${DIRECTORY}/fasta/error_list, please check these files manually before trying to align"
+    echo "`cat ${DIRECTORY}/fasta_${DATE}/error_list | wc -l` fasta files have the wrong number of taxa. BUSCO IDs have been printed to ${DIRECTORY}/fasta_${DATE}/error_list, please check these files manually before trying to align"
 fi
 
 rm tmp
