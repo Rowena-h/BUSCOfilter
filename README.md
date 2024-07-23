@@ -6,7 +6,7 @@ A tool to filter [**BUSCO**](https://busco.ezlab.org/) output into files of sing
 
 ## Requirements
 
-BUSCOfilter is a bash executable which runs in the Linux command line. The current version is up to date for BUSCO v5.7.1 output. Download the [latest release](), or use:
+BUSCOfilter is a bash executable which runs in the Linux command line. The current version is up to date for BUSCO v5.7.1 output. Download the [latest release](https://github.com/Rowena-h/BUSCOfilter/releases), or use:
 
 ```
 git clone https://github.com/Rowena-h/BUSCOfilter.git
