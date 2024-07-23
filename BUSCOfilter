@@ -1,16 +1,23 @@
 #!/bin/bash
-#Script to sort BUSCO output into gene folders for phylogenomics
+# Tool to sort BUSCO output into gene folders for phylogenomics
+#
+# This program is distributed under the terms of the GNU General Public License v3
+#
+#  If you use BUSCOfilter in your work please cite:
+#      Hill R. (2024) BUSCOfilter. https://github.com/Rowena-h/BUSCOfilter
 
 display_usage() {
-	echo ""
-	echo "USAGE: $0 [OPTIONS]"
+    echo "-------------------------------------------------"
+    echo "BUSCOfilter v2.0"
+    echo "-------------------------------------------------"
     echo ""
-	echo "OPTIONS"
+    echo "USAGE: $0 [-d indir] [-m all]"
+    echo ""
+    echo "OPTIONS"
     echo "  -d, --directory"
-    echo "      Directory containing busco output folders which must have the typical 'run_' prefix"
-    echo ""
-    echo "EXAMPLE"
-	echo "  $0 -d /data/busco_folders"
+    echo "      directory containing BUSCO (>= v5.7.1) output folders which contain subdirectories with the typical 'run_' prefix"
+    echo "  -m, --mode"
+    echo "      produce files for all single-copy BUSCOs or only those with a BUSCO in all taxa. Options 'all' & 'common' [Default = common]"
     echo ""
     exit
 }
@@ -29,13 +36,16 @@ do
         display_usage
         ;;
         -d|--directory)
-        DIRECTORY="$2"
+        directory="$2"
+        ;;
+        -m|--mode)
+        mode="$2"
         shift
     esac
     shift
 done
 
-if [ -z "$DIRECTORY" ]
+if [ -z "$directory" ]
 then
     echo ""
     echo "Missing required options"
@@ -45,96 +55,139 @@ then
     exit
 fi
 
+if [ -z "$mode" ]
+then
+    mode="common"
+fi
+
 echo "`date -u`"
 echo "-------------------------------------------------"
-echo "Starting $0"
+echo "Starting BUSCOfilter v2.0"
 echo "-------------------------------------------------"
 
-DATE=$(date +"%d-%m-%Y")
+date=$(date +"%d-%m-%Y")
+outdir=${directory}/BUSCOfilter
 
-ls -d ${DIRECTORY}/run_* | sed s/^.*\\/\// | cut -f 2- -d '_' > ${DIRECTORY}/assembly_list_${DATE}
+mkdir -p ${outdir}
 
-echo "List of all assemblies in the provided directory written to  ${DIRECTORY}/assembly_list_${DATE}"
+ls -d ${directory}/*/run_* | sed 's|/run_.*||' | sed 's|^.*/||' > ${outdir}/genome_list_${date}
 
-LIST=${DIRECTORY}/assembly_list_${DATE}
+echo "List of all genomes in the provided directory written to ${outdir}/genome_list_${date}"
+
+#Check all BUSCO folders are complete
+
+if [ $(cat ${outdir}/genome_list_${date}| wc -l) != $(ls ${directory}/*/short*.txt | wc -l) ]
+then
+    echo "Error: provided directory seems to contain incomplete BUSCO runs"
+    echo "Exiting..."
+    exit
+fi
 
 #Make text file with BUSCO stats
 
-for assembly in `cat $LIST`
+list=${outdir}/genome_list_${date}
+
+for genome in `cat $list`
 do
-    grep "C:" ${DIRECTORY}/run_${assembly}/short_summary_* >> summaries
+    grep "C:" ${directory}/${genome}/run_*/short_summary.txt >> ${outdir}/summaries
 done
 
-paste $LIST summaries > ${DIRECTORY}/busco_stats_${DATE}.txt
+paste $list ${outdir}/summaries > ${outdir}/busco_stats_${date}.txt
 
-rm summaries
+rm ${outdir}/summaries
 
-echo "Summary of BUSCO statistics written to ${DIRECTORY}/busco_stats_${DATE}.txt"
+echo "Summary of BUSCO statistics per genome written to ${outdir}/busco_stats_${date}.txt"
 
+#Make list of BUSCOs to make files for
+
+dirs=(`ls -d ${directory}/*/run_*/busco_sequences/single_copy_busco_sequences`)
+
+if [ $mode = common ]
 #Filter for common BUSCOs
+then
+    find "${dirs[@]}" -maxdepth 1 -type f -name "*.faa" -printf '%f\n' | sort | uniq -c | sed -n "s/^ *${#dirs[@]} //p" > ${outdir}/busco_list_${date}
 
-dirs=(`ls -d ${DIRECTORY}/*/single_copy_busco_sequences`)
+    echo "List of `cat ${outdir}/busco_list_${date} | wc -l` single copy BUSCOs common to all genomes written to ${outdir}/busco_list_${date}"
+elif [ $mode = all ]
+#Use all BUSCOS
+then
+    find "${dirs[@]}" -maxdepth 1 -type f -name "*.faa" -printf '%f\n' | sort | uniq -c | awk '{print $2}' > ${outdir}/busco_list_${date}
 
-find "${dirs[@]}" -maxdepth 1 -type f -name "*.fna" -printf '%f\n' | sort | uniq -c | sed -n "s/^ *${#dirs[@]} //p" > ${DIRECTORY}/busco_list_${DATE}
+    echo "List of `cat ${outdir}/busco_list_${date} | wc -l` single copy BUSCOs written to ${outdir}/busco_list_${date}"
+fi
 
-echo "List of `cat ${DIRECTORY}/busco_list_${DATE} | wc -l` common single copy BUSCOs from all assemblies written to ${DIRECTORY}/busco_list_${DATE}"
-
-#Copy and rename only common BUSCOs
+#Copy and rename BUSCOs
 
 n=0
 
-for assembly in `cat $LIST`
+for genome in `cat $list`
 do
-    mkdir ${DIRECTORY}/run_${assembly}/for_phylo
-
-    for busco in `cat ${DIRECTORY}/busco_list_${DATE} | cut -f 1 -d '.'`
-    do
-        cp ${DIRECTORY}/run_${assembly}/single_copy_busco_sequences/${busco}.fna ${DIRECTORY}/run_${assembly}/for_phylo/${busco}_${assembly}
-        
-        #Replace fasta header with assembly name
-        sed -i "1s/.*/>${assembly}/" ${DIRECTORY}/run_${assembly}/for_phylo/${busco}_${assembly}
-    done
-    
     n=$((n+1))
-    echo "Extracting common BUSCOs, assembly ${n} / `cat $LIST | wc -l`"
+    echo -ne "Extracting BUSCOs, genome ${n} / `cat $list | wc -l`"\\r
+    
+    mkdir -p ${outdir}/${genome}/for_phylo
+
+    for busco in `cat ${outdir}/busco_list_${date} | cut -f 1 -d '.'`
+    do
+        if [ -f ${directory}/${genome}/run_*/busco_sequences/single_copy_busco_sequences/${busco}.faa ]
+        then
+            cp ${directory}/${genome}/run_*/busco_sequences/single_copy_busco_sequences/${busco}.faa ${outdir}/${genome}/for_phylo/${busco}_${genome}
+        
+            #Replace fasta header with genome name
+            sed -i "1s/.*/>${genome}/" ${outdir}/${genome}/for_phylo/${busco}_${genome}
+        fi
+    done
 done
 
 #Move into new folder of fasta files
 
 n=0
 
-mkdir ${DIRECTORY}/fasta_${DATE}
+mkdir -p ${outdir}/fasta_${date}
 
-for busco in `cat ${DIRECTORY}/busco_list_${DATE} | cut -f 1 -d '.'`
+for busco in `cat ${outdir}/busco_list_${date} | cut -f 1 -d '.'`
 do
-    cat ${DIRECTORY}/*/for_phylo/${busco}* > ${DIRECTORY}/fasta_${DATE}/${busco}.fa
+    cat ${outdir}/*/for_phylo/${busco}* > ${outdir}/fasta_${date}/${busco}.fa
     
     n=$((n+1))
-    echo "Writing fasta file for BUSCO ${n} / `cat ${DIRECTORY}/busco_list_${DATE} | wc -l`"
+    echo -ne "Writing fasta file for BUSCO ${n} / `cat ${outdir}/busco_list_${date} | wc -l`"\\r
 done
 
 #Check number of sequences in fasta files
 
-for busco in `cat ${DIRECTORY}/busco_list_${DATE} | cut -f 1 -d '.'`
+for busco in `cat ${outdir}/busco_list_${date} | cut -f 1 -d '.'`
 do
-    fgrep -o '>' ${DIRECTORY}/fasta_${DATE}/${busco}.fa | wc -l > tmp
+    fgrep -o '>' ${outdir}/fasta_${date}/${busco}.fa | wc -l > ${outdir}/tmp
 
-    if [ `cat tmp` != `cat ${LIST} | wc -l` ]
+    if [ $mode = common ] && [ `cat ${outdir}/tmp` != `cat ${list} | wc -l` ]
     then
-        echo ${busco} >> ${DIRECTORY}/fasta_${DATE}/error_list
+        echo ${busco} >> ${outdir}/error_list
     fi
     
+    if [ $mode = all ]
+    then
+        printf "${busco}%s\t$(cat ${outdir}/tmp)%s\n" >> ${outdir}/tmp_busco_list_${date}
+    fi
 done
 
-echo "Fasta files ready to align in ${DIRECTORY}/fasta_${DATE}"
-
-if [ -f ${DIRECTORY}/fasta_${DATE}/error_list ]
+if [ $mode = all ]
 then
-    echo "`cat ${DIRECTORY}/fasta_${DATE}/error_list | wc -l` fasta files have the wrong number of taxa. BUSCO IDs have been printed to ${DIRECTORY}/fasta_${DATE}/error_list, please check these files manually before trying to align"
+    mv ${outdir}/tmp_busco_list_${date} ${outdir}/busco_list_${date}
+    echo "Number of genomes that each BUSCO was found in has been added to ${outdir}/busco_list_${date}"
 fi
 
-rm tmp
-rm -r ${DIRECTORY}/*/for_phylo
+echo "Fasta files ready to align in ${directory}/fasta_${date}"
+
+if [ $mode = common ] && [ -f ${outdir}/error_list ]
+then
+    echo "`cat ${outdir}/error_list | wc -l` fasta files have the wrong number of taxa. BUSCO IDs have been printed to ${outdir}/error_list, please check these files manually before trying to align"
+fi
+
+rm ${outdir}/tmp
+for genome in `cat $list`
+do
+    rm -rf ${outdir}/${genome}/for_phylo
+done
 
 echo "-------------------------------------------------"
 echo "Finished `date -u`"
