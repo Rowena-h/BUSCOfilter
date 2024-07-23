@@ -33,7 +33,7 @@ In addition to a folder containing fasta files for each selected single copy BUS
 
 File | Description
 ------ | -----------
-assembly_list | A list of the genomes found in the provided directory (i.e. the name of each BUSCO output folder after the 'run_' prefix).
+genome_list | A list of the genomes found in the provided directory (i.e. the name of each BUSCO output folder after the 'run_' prefix).
 busco_stats | A tabular summary of the BUSCO run statistics for all the provided genomes.
 busco_list | A list of IDs for the single copy BUSCOs that files were made for. If using `-m all` this will have a second column with the number of genomes that each BUSCO was found in.
 error_list | If any of the BUSCO fasta files have the incorrect number of sequences when using `-m common`, the BUSCO IDs are stored in this file so that fasta files can be manually checked.
