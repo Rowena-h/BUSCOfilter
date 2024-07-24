@@ -8,7 +8,7 @@
 
 display_usage() {
     echo "-------------------------------------------------"
-    echo "BUSCOfilter v2.0"
+    echo "BUSCOfilter v2.1"
     echo "-------------------------------------------------"
     echo ""
     echo "USAGE: $0 [-d indir] [-m all]"
@@ -62,7 +62,7 @@ fi
 
 echo "`date -u`"
 echo "-------------------------------------------------"
-echo "Starting BUSCOfilter v2.0"
+echo "Starting BUSCOfilter v2.1"
 echo "-------------------------------------------------"
 
 date=$(date +"%d-%m-%Y")
@@ -116,41 +116,29 @@ then
     echo "List of `cat ${outdir}/busco_list_${date} | wc -l` single copy BUSCOs written to ${outdir}/busco_list_${date}"
 fi
 
-#Copy and rename BUSCOs
+#Rename BUSCO headers and add to new file
 
-n=0
-
-for genome in `cat $list`
-do
-    n=$((n+1))
-    echo -ne "Extracting BUSCOs, genome ${n} / `cat $list | wc -l`"\\r
-    
-    mkdir -p ${outdir}/${genome}/for_phylo
-
-    for busco in `cat ${outdir}/busco_list_${date} | cut -f 1 -d '.'`
-    do
-        if [ -f ${directory}/${genome}/run_*/busco_sequences/single_copy_busco_sequences/${busco}.faa ]
-        then
-            cp ${directory}/${genome}/run_*/busco_sequences/single_copy_busco_sequences/${busco}.faa ${outdir}/${genome}/for_phylo/${busco}_${genome}
-        
-            #Replace fasta header with genome name
-            sed -i "1s/.*/>${genome}/" ${outdir}/${genome}/for_phylo/${busco}_${genome}
-        fi
-    done
-done
-
-#Move into new folder of fasta files
-
-n=0
+g=0
 
 mkdir -p ${outdir}/fasta_${date}
 
-for busco in `cat ${outdir}/busco_list_${date} | cut -f 1 -d '.'`
+for genome in `cat $list`
 do
-    cat ${outdir}/*/for_phylo/${busco}* > ${outdir}/fasta_${date}/${busco}.fa
+    g=$((g+1))
+    echo "Extracting BUSCOs, genome ${g} / `cat $list | wc -l`"
+    b=0
     
-    n=$((n+1))
-    echo -ne "Writing fasta file for BUSCO ${n} / `cat ${outdir}/busco_list_${date} | wc -l`"\\r
+    for busco in `cat ${outdir}/busco_list_${date} | cut -f 1 -d '.'`
+    do
+        b=$((b+1))
+        echo -ne "BUSCO ${b} / `cat ${outdir}/busco_list_${date} | wc -l`"\\r
+    
+        if [ -f ${directory}/${genome}/run_*/busco_sequences/single_copy_busco_sequences/${busco}.faa ]
+        then
+            #Replace fasta header with genome name
+            sed "1s/.*/>${genome}/" ${directory}/${genome}/run_*/busco_sequences/single_copy_busco_sequences/${busco}.faa >> ${outdir}/fasta_${date}/${busco}.fa
+        fi
+    done
 done
 
 #Check number of sequences in fasta files
